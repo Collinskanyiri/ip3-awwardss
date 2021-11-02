@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Projects, Profile, Reviews
+from .models import Project, Projects, Profile, Reviews
 from pyuploadcare.dj.forms import ImageField
 
 
@@ -22,4 +22,11 @@ class UpdateUserForm(forms.ModelForm):
 class UpdateUserProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['username', 'projects', 'profile_photo', 'bio', 'contact']        
+        fields = ['username', 'projects', 'profile_photo', 'bio', 'contact']  
+
+class ProjectForm(forms.ModelForm):
+    project_img = ImageField(label='')
+
+    class Meta:
+        model = Project
+        fields = ('project_img', 'project_name', 'project_url', 'description')
