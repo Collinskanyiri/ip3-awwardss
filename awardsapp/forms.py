@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Project, Projects, Profile, Reviews
+from .models import Project, Projects, Profile, Review, Reviews
 from pyuploadcare.dj.forms import ImageField
 
 
@@ -30,3 +30,8 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ('project_img', 'project_name', 'project_url', 'description')
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['Design', 'Usability', 'Content']        
