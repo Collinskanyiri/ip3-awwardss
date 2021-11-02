@@ -2,13 +2,16 @@ from django.shortcuts import render
 
 # Create your views here.
 def signup(request):
-    name = 'Signup'
     if request.method == 'POST':
-        form = SignUpForm(request.POST)
+        form = SignupForm(request.POST)
         if form.is_valid():
             form.save()
-
-            return redirect('home')
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            login(request, user)
+            return redirect('index')
     else:
-        form = SignUpForm()
-    return render(request, 'registration/signup.html', {'form': form, 'name': name})
+        form = SignupForm()
+    return render(request, 'registration/signup.html', {'form': form})
+
