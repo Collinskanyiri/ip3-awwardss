@@ -17,15 +17,6 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework import routers
-from awardsapp import views
-
-
-
-router = routers.DefaultRouter()
-router.register('users', views.ProfileViewSet)
-router.register('project', views.ProjectViewSet)
-router.register('profile', views.ReviewViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
