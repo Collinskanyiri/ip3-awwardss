@@ -1,25 +1,37 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Project, Projects, Profile, Review, Reviews
+from .models import Project,Profile, Review
 from pyuploadcare.dj.forms import ImageField
 
 
-class SignupForm(UserCreationForm):
-    email = forms.EmailField(max_length=254, help_text='Required. Inform a valid email address.')
+class SignUpForm(UserCreationForm):
+    def __init__(self, *args, **kwargs):
+        super(SignUpForm, self).__init__(*args, **kwargs)
+
+        for fieldname in ['username', 'password1', 'password2']:
+            self.fields[fieldname].help_text = None
+
+    email = forms.EmailField(max_length=254, required=True)
 
     class Meta:
         model = User
-        fields = ('user', 'email', 'password1', 'password2')
+        fields = ('email' ,'username','password1', 'password2', )
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        exclude = ['user']
 
 class UpdateUserForm(forms.ModelForm):
-    email = forms.EmailField(max_length=254, help_text='Required. Inform a valid email address.')
+    email = forms.EmailField(max_length=254, required=True)
 
     class Meta:
         model = User
         fields = ('user', 'email')
 
-class UpdateUserProfileForm(forms.ModelForm):
+class UpdateProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['username', 'projects', 'profile_photo', 'bio', 'contact']  
@@ -34,4 +46,4 @@ class ProjectForm(forms.ModelForm):
 class ReviewForm(forms.ModelForm):
     class Meta:
         model = Review
-        fields = ['Design', 'Usability', 'Content']        
+        fields = ['Design', 'Usability', 'Content','score']        
