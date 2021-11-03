@@ -69,6 +69,8 @@ class Review(models.Model):
     Usability=models.IntegerField(choices=Rating, default='1' )
     Content=models.IntegerField(choices=Rating, default='1' )
     score = models.FloatField(default=0, blank=True)
+    user= models.ForeignKey(User, on_delete=models.CASCADE)
+    project_name= models.ForeignKey(Project, on_delete=models.CASCADE, related_name='projects_name')
     
     def __str__(self):
         return f'{self.project} Review'
@@ -80,5 +82,5 @@ class Review(models.Model):
             return score
     score=property(mean)
 
-    def save_rating(self):
+    def save_review(self):
         self.save()
