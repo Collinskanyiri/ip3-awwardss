@@ -1,43 +1,41 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Project,Profile, Review
+from .models import Post, Profile, Rating
+from pyuploadcare.dj.forms import ImageField
 
-class SignUpForm(UserCreationForm):
-    def __init__(self, *args, **kwargs):
-        super(SignUpForm, self).__init__(*args, **kwargs)
 
-        for fieldname in ['username', 'password1', 'password2']:
-            self.fields[fieldname].help_text = None
-
-    email = forms.EmailField(max_length=254, required=True)
+class SignupForm(UserCreationForm):
+    email = forms.EmailField(max_length=254, help_text='Required. Inform a valid email address.')
 
     class Meta:
         model = User
-        fields = ('email' ,'username','password1', 'password2', )
+        fields = ('username', 'email', 'password1', 'password2')
 
 
-class ProfileForm(forms.ModelForm):
+class PostForm(forms.ModelForm):
+    photo = ImageField(label='')
+
+    class Meta:
+        model = Post
+        fields = ('photo', 'title', 'url', 'description', 'technologies',)
+
+
+class UpdateUserForm(forms.ModelForm):
+    email = forms.EmailField(max_length=254, help_text='Required. Inform a valid email address.')
+
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+
+class UpdateUserProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        exclude = ['user']
+        fields = ['name', 'location', 'profile_picture', 'bio', 'contact']
 
 
-class UpdateProfileForm(forms.ModelForm):
+class RatingsForm(forms.ModelForm):
     class Meta:
-        model = Profile
-        fields = ['username', 'projects', 'profile_photo', 'bio', 'contact']  
-
-    class Meta:
-        model = Project
-        fields = ('project_img', 'project_name', 'project_url', 'description')
-
-class ReviewForm(forms.ModelForm):
-    class Meta:
-        model = Review
-        fields = ['Design', 'Usability', 'Content']   
-
-class ProjectForm(forms.ModelForm):
-    class Meta:
-        model = Project
-        fields = ('project_img', 'project_name', 'project_url', 'description')
+        model = Rating
+        fields = ['design', 'usability', 'content']

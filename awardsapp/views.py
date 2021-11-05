@@ -1,98 +1,118 @@
-from django.shortcuts import render
-from .forms import SignupForm,UpdateUserForm, UpdateProfileForm, ReviewForm,ProjectForm
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Profile,Project,Review
 from django.contrib.auth.decorators import login_required
-from rest_framework import viewsets,permissions
-from .serializers import ProfileSerializer, ProjectSerializer,UpdateProjectSerializer, ReviewSerializer,ShowProjectSerializer,CreateProjectSerializer,DetailedProjectSerializer,ShowLikeSerializer,CreateLikeSerializer
-# Create your views here.
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import SignupForm, PostForm, UpdateUserForm, UpdateUserProfileForm, RatingsForm
+from rest_framework import viewsets
+from .models import Profile, Post, Rating
+from .serializers import ProfileSerializer, UserSerializer, PostSerializer
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
+import random
+
+
+def index(request):
+    if request.method == "POST":
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.user = request.user
+            post.save()
+    else:
+        form = PostForm()
+
+    try:
+        posts = Post.objects.all()
+        posts = posts[::-1]
+        a_post = random.randint(0, len(posts)-1)
+        random_post = posts[a_post]
+        print(random_post.photo)
+    except Post.DoesNotExist:
+        posts = None
+    return render(request, 'index.html', {'posts': posts, 'form': form, 'random_post': random_post})
+
+
+class ProfileViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+
 def signup(request):
-    name = 'Signup'
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
             form.save()
-
-            return redirect('home')
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            login(request, user)
+            return redirect('index')
     else:
         form = SignupForm()
-    return render(request, 'registration/signup.html', {'form': form, 'name': name})
+    return render(request, 'registration/signup.html', {'form': form})
 
-@login_required(login_url='/login/')
-def profile(request):
-    current_user = request.user
-
-    return render(request, 'profile.html', {'current_user': current_user, })
-
-@login_required(login_url='/login/')
-def update_profile(request):
-    current_user = request.user
-    profile = Profile(user=request.user)
-   
-    if request.method == 'POST':
-        form = UpdateProfileForm(request.POST, request.FILES,  instance=request.user.profile)
-        if form.is_valid():
-            profile = form.save(commit=False)
-            profile.user= current_user
-            profile.save()
-        return redirect('home')
-    else:
-        form = UpdateProfileForm(instance=request.user.profile)
-        args = {}
-        # args.update(csrf(request))
-        args['form'] = form
-    return render(request, 'update_profile.html', {'current_user':current_user, 'form':form})
-
-class ProfileViewset(viewsets.ModelViewSet):
-    
-    queryset=Profile.objects.all()
-    serializer_class=ProfileSerializer
-    permission_classes=[permissions.AllowAny]
-
-class ProjectViewset(viewsets.ModelViewSet):
-    
-    queryset=Project.objects.all()
-    serializer_class=ProjectSerializer,{
-        'show': ShowProjectSerializer,
-        'create': CreateProjectSerializer,
-        'update': UpdateProjectSerializer,
-        'detailed': DetailedProjectSerializer,
-         }
-    permission_classes=[permissions.AllowAny]
-    def create(self, request, *args, **kwargs):
-        author = request.author
-        request.data['author'] = author.pk
-        return super().create(request, *args, **kwargs)
-
-    def update(self, request, *args, **kwargs):
-        author = request.author
-        request.data['author'] = author.pk
-        return super().update(request, *args, **kwargs)
-
-    
-class ReviewViewset(viewsets.ModelViewSet):
-    
-    queryset=Review.objects.all()
-    serializer_class=ReviewSerializer
-    permission_classes=[permissions.AllowAny]
 
 @login_required(login_url='login')
-def project(request, project):
-    project = Project.objects.get(title=project)
-    review = Review.objects.filter(user=request.user, project=project).first()
+def profile(request, username):
+    return render(request, 'profile.html')
+
+
+def user_profile(request, username):
+    user_prof = get_object_or_404(User, username=username)
+    if request.user == user_prof:
+        return redirect('profile', username=request.user.username)
+    params = {
+        'user_prof': user_prof,
+    }
+    return render(request, 'userprofile.html', params)
+
+
+@login_required(login_url='login')
+def edit_profile(request, username):
+    user = User.objects.get(username=username)
+    if request.method == 'POST':
+        user_form = UpdateUserForm(request.POST, instance=request.user)
+        prof_form = UpdateUserProfileForm(request.POST, request.FILES, instance=request.user.profile)
+        if user_form.is_valid() and prof_form.is_valid():
+            user_form.save()
+            prof_form.save()
+            return redirect('profile', user.username)
+    else:
+        user_form = UpdateUserForm(instance=request.user)
+        prof_form = UpdateUserProfileForm(instance=request.user.profile)
+    params = {
+        'user_form': user_form,
+        'prof_form': prof_form
+    }
+    return render(request, 'edit.html', params)
+
+
+@login_required(login_url='login')
+def project(request, post):
+    post = Post.objects.get(title=post)
+    ratings = Rating.objects.filter(user=request.user, post=post).first()
     rating_status = None
-    if review is None:
+    if ratings is None:
         rating_status = False
     else:
         rating_status = True
     if request.method == 'POST':
-        form = ReviewForm(request.POST)
+        form = RatingsForm(request.POST)
         if form.is_valid():
             rate = form.save(commit=False)
             rate.user = request.user
-            rate.post = project
+            rate.post = post
             rate.save()
-            post_ratings = Review.objects.filter(project=project)
+            post_ratings = Rating.objects.filter(post=post)
 
             design_ratings = [d.design for d in post_ratings]
             design_average = sum(design_ratings) / len(design_ratings)
@@ -120,3 +140,19 @@ def project(request, project):
 
     }
     return render(request, 'project.html', params)
+
+
+def search_project(request):
+    if request.method == 'GET':
+        title = request.GET.get("title")
+        results = Post.objects.filter(title__icontains=title).all()
+        print(results)
+        message = f'name'
+        params = {
+            'results': results,
+            'message': message
+        }
+        return render(request, 'results.html', params)
+    else:
+        message = "You haven't searched for any image category"
+    return render(request, 'results.html', {'message': message})
